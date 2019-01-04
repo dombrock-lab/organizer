@@ -1,60 +1,59 @@
+//ROUTING BOILERPLATE
 const express = require('express');
 const router = express.Router();
-const clients = require('../api/clients.js');
-const database = require('../api/util/database.js');
+const db_u = require('../control/db_util.js');//database utility module
+const database = require('../control/database.js');
+const route_u = require('./util/route_util.js');//router utility module
 
-const util = require('./util/route_util.js');
+const table = 'clients';
 
+function route(req,res,endpoint){
+    let db = database.open();
+    let value = route_u.pathVal(req);//final part of the URL
+    let results = custom_routing(endpoint,value,db);    
+    results.then(function(data){
+        res.send(data);
+        database.close(db);
+    });
+}
+
+//customise this routing
+function custom_routing(endpoint,value,db){
+    switch(endpoint){
+        case 'list':
+            var results = db_u.list(db,table);
+            break;
+        case 'id':
+            var results = db_u.getBy(db,table,"id",value);
+            break;
+        case 'name':
+            var results = db_u.getBy(db,table,"name",value);
+            break;
+        case 'delete/id':
+            var results = db_u.deleteBy(db,table,"id",value);
+            break;
+        case 'delete/name':
+            var results = db_u.deleteBy(db,table,"name",value);
+            break;
+        default:
+            var results = db_u.list(db,table);
+    }
+    return results;
+}
 router.get('/list/', function(req, res){
-    let db = database.open();
-    let results = clients.list(db);
-    results.then(function(data){
-        res.send(data);
-        database.close(db);
-    });
+    route(req,res,'list');
 });
-
-//list client by id
 router.get('/id/*', function(req, res){
-    let db = database.open();
-    let value = util.pathVal(req);
-    let results = clients.getBy(db,"id",value);
-    results.then(function(data){
-        res.send(data);
-        database.close(db);
-    });
+    route(req,res,'id');
 });
-
-//list client by name
 router.get('/name/*', function(req, res){
-    let db = database.open();
-    let value = util.pathVal(req);
-    let results = clients.getBy(db,"name",value);
-    results.then(function(data){
-        res.send(data);
-        database.close(db);
-    });
+    route(req,res,'name');
 });
-
-//delete client by id
 router.get('/delete/id/*', function(req, res){
-    let db = database.open();
-    let value = util.pathVal(req);
-    let results = clients.deleteBy(db,"id",value);
-    results.then(function(data){
-        res.send(data);
-        database.close(db);
-    });
+    route(req,res,'delete/id');
+});
+router.get('delete/name/*', function(req, res){
+    route(req,res,'delete/name');
 });
 
-//delete client by name
-router.get('delete/name/*', function(req, res){
-    let db = database.open();
-    let value = util.pathVal(req);
-    let results = clients.deleteBy(db,"name",value);
-    results.then(function(data){
-        res.send(data);
-        database.close(db);
-    });
-});
 module.exports = router;
